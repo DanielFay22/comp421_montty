@@ -20,15 +20,17 @@ int TerminalDriverStatistics(struct termstat *stats);
 int InitTerminalDriver(void);
 
 
-void user_thread(int *term) {
-    InitTerminal(*term);
+void user_thread(void *vterm) {
+    int term = ((int *)vterm)*;
+
+    InitTerminal(term);
 
     char *buf = (char *) (malloc(sizeof(char) * BUF_LEN));
     int read;
 
     while (1) {
-        read = ReadTerminal(*term, buf, BUF_LEN);
-        WriteTerminal(*term, buf, read);
+        read = ReadTerminal(term, buf, BUF_LEN);
+        WriteTerminal(term, buf, read);
     }
 }
 

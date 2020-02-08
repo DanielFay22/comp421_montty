@@ -10,7 +10,7 @@
 
 static cond_id_t out_full[NUM_TERMINALS];
 static cond_id_t inp_empty[NUM_TERMINALS];
-static cond_id_t output_ready[NUM_TERMINALS];
+//static cond_id_t output_ready[NUM_TERMINALS];
 
 static cond_id_t data_register_ready[NUM_TERMINALS];
 //static cond_id_t data_register_read[NUM_TERMINALS];
@@ -52,12 +52,12 @@ extern void ReceiveInterrupt(int term) {
     ++input_chars[term];
     ++echo_chars[term];
 
-    stats[term].tty_in += 1
+    stats[term].tty_in += 1;
 
     flush_output(term);
     
     // Signal input buffer is non-empty.
-    CondSignal(inp_empty[term])
+    CondSignal(inp_empty[term]);
 
     return;
 }
@@ -97,7 +97,7 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
         while (output_chars[term] == BUF_LEN)
             flush_output(term);
 
-        output_buffer[term][output_write_pos[term]] = c;
+        output_buffer[term][output_write_pos[term]] = buf[i];
 
         output_write_pos[term] = (output_write_pos[term] + 1) % BUF_LEN;
         ++output_chars[term];
@@ -132,11 +132,6 @@ extern int InitTerminal(int term) {
     return InitHardware(term);
 }
 
-//extern void set_data_register_read(int term) {
-//    CondSignal(data_register_read[term]);
-//}
-
-
 extern int TerminalDriverStatistics(struct termstat *cpy_stats) {
     Declare_Monitor_Entry_Procedure();
 
@@ -148,13 +143,14 @@ extern int TerminalDriverStatistics(struct termstat *cpy_stats) {
     return 0;
 }
 
-void InitTerminalDriver() {
+extern int InitTerminalDriver() {
     int i;
 
     for (i = 0; i < NUM_TERMINALS; i++) {
         out_full[i] = CondCreate();
         inp_empty[i] = CondCreate();
         data_register_ready[i] = CondCreate();
-//        data_register_read[i] = CondCreate();
     }
+
+    return 0;
 }
