@@ -7,6 +7,8 @@
 
 #define BUF_LEN 4096
 
+static void flush_output(int term);
+
 
 static cond_id_t out_full[NUM_TERMINALS];
 static cond_id_t inp_empty[NUM_TERMINALS];
