@@ -10,7 +10,7 @@
 #define BUF_LEN 4096
 
 static void flush_output(int term);
-
+static void echo(int term, char *buf, int buflen);
 
 //static cond_id_t out_full[NUM_TERMINALS];
 static cond_id_t inp_empty[NUM_TERMINALS];
@@ -46,20 +46,44 @@ extern void ReceiveInterrupt(int term) {
 
     char c = ReadDataRegister(term);
 
-    printf("Received character %c\n", c);
+    printf("Received character %02x\n", c);
 
     // If either buffer is full, ignore the event.
     if (input_chars[term] == BUF_LEN || echo_chars[term] == BUF_LEN)
         return;
 
-    input_buffer[term][input_write_pos[term]] = c;
-    echo_buffer[term][echo_write_pos[term]] = c;
 
-    input_write_pos[term] = (input_write_pos[term] + 1) % BUF_LEN;
-    echo_write_pos[term] = (echo_write_pos[term] + 1) % BUF_LEN;
+    switch (c){
+        case '\b':
+            if (input_chars[term] > 0) {
+                input_write_pos[term] = (input_write_pos[term] - 1) % BUF_LEN;
+                --input_chars[term];
 
-    ++input_chars[term];
-    ++echo_chars[term];
+                echo(term, "\b \b", 3);
+            }
+            break;
+        case '\r':
+        case '\n':
+            input_buffer[term][input_write_pos[term]] = '\n';
+            input_write_pos[term] = (input_write_pos[term] + 1) % BUF_LEN;
+            ++input_chars[term];
+
+            echo(term, "\r\n", 2);
+
+            break;
+        default:
+            input_buffer[term][input_write_pos[term]] = c;
+            input_write_pos[term] = (input_write_pos[term] + 1) % BUF_LEN;
+
+            echo_buffer[term][echo_write_pos[term]] = c;
+            echo_write_pos[term] = (echo_write_pos[term] + 1) % BUF_LEN;
+
+            ++input_chars[term];
+            ++echo_chars[term];
+
+            break;
+
+    }
 
     stats[term].tty_in += 1;
 
@@ -77,10 +101,24 @@ extern void TransmitInterrupt(int term) {
     CondSignal(data_register_ready[term]);
 }
 
+static void echo(int term, char *buf, int buflen) {
+    int i;
+
+    if (echo_chars[term] >= BUF_LEN - 3)
+        return;
+
+    for (i = 0; i < buflen; i++) {
+        echo_buffer[term][echo_write_pos[term] + i] = buf[i];
+    }
+
+    echo_chars[term] += i;
+    echo_write_pos[term] += i;
+}
+
 static void flush_output(int term) {
     printf("flush_output\n");
 
-    if (output_chars[term] + echo_chars[term] > 0) {
+    while (output_chars[term] + echo_chars[term] > 0) {
 
         if (echo_chars[term] > 0) {
             WriteDataRegister(term, echo_buffer[term][echo_read_pos[term]]);
