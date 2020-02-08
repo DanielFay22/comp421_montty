@@ -100,15 +100,19 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
     int i;
     for (i = 0; i < buflen; i++) {
 
-        while (output_chars[term] == BUF_LEN)
+        while (output_chars[term] == BUF_LEN) {
+            printf("Flushing Output\n");
             flush_output(term);
+        }
 
+        printf("Writing character\n");
         output_buffer[term][output_write_pos[term]] = buf[i];
 
         output_write_pos[term] = (output_write_pos[term] + 1) % BUF_LEN;
         ++output_chars[term];
     }
 
+    printf("Finished WriteTerminal\n");
     flush_output(term);
 
     stats[term].user_in += i;

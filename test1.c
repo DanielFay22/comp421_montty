@@ -39,7 +39,7 @@ int main(void) {
     int i = 1;
 
     InitTerminalDriver();
-    InitTerminal(1);
+//    InitTerminal(1);
 
     ThreadCreate(user_thread, NULL);
 
