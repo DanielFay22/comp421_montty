@@ -120,6 +120,8 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
 
         output_write_pos[term] = (output_write_pos[term] + 1) % BUF_LEN;
         ++output_chars[term];
+
+        flush_output(term);
     }
 
     printf("Finished WriteTerminal\n");
@@ -146,6 +148,7 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
 
         c = (buf[i++] = input_buffer[term][input_read_pos[term]]);
         input_read_pos[term] = (input_read_pos[term] + 1) % BUF_LEN;
+        input_chars[term]--;
 
     }
 
