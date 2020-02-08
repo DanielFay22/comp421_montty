@@ -203,12 +203,6 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
 extern int InitTerminal(int term) {
     Declare_Monitor_Entry_Procedure();
 
-//    out_full[term] = CondCreate();
-//    inp_empty[term] = CondCreate();
-//    data_register_ready[term] = CondCreate();
-
-    CondSignal(data_register_ready[term]);
-
     return InitHardware(term);;
 }
 
