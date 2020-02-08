@@ -142,10 +142,11 @@ extern int InitTerminal(int term) {
 //    out_full[term] = CondCreate();
 //    inp_empty[term] = CondCreate();
 //    data_register_ready[term] = CondCreate();
+    int s = InitHardware(term);
 
     CondSignal(data_register_ready[term]);
 
-    return InitHardware(term);
+    return s
 }
 
 extern int TerminalDriverStatistics(struct termstat *cpy_stats) {
