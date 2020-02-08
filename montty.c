@@ -146,7 +146,7 @@ extern int InitTerminal(int term) {
 
     CondSignal(data_register_ready[term]);
 
-    return s
+    return s;
 }
 
 extern int TerminalDriverStatistics(struct termstat *cpy_stats) {
