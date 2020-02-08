@@ -1,7 +1,7 @@
 
 
-#include <hardware.h>
-#include <terminals.h>
+#include "hardware.h"
+#include "terminals.h"
 #include "threads.h"
 
 #include <stdio.h>
@@ -34,6 +34,9 @@ static int echo_write_pos[NUM_TERMINALS] = {0};
 static int input_read_pos[NUM_TERMINALS] = {0};
 static int output_read_pos[NUM_TERMINALS] = {0};
 static int echo_read_pos[NUM_TERMINALS] = {0};
+
+static int is_writing[NUM_TERMINALS] = {0};
+static cond_id_t can_write[NUM_TERMINALS];
 
 static struct termstat stats[NUM_TERMINALS] = {{0,0,0,0}};
 
@@ -69,27 +72,28 @@ extern void ReceiveInterrupt(int term) {
 extern void TransmitInterrupt(int term) {
     Declare_Monitor_Entry_Procedure();
 
+    printf("Transmit interrupt received\n");
+
     CondSignal(data_register_ready[term]);
 }
 
 static void flush_output(int term) {
     printf("flush_output\n");
 
-    while (output_chars[term] + echo_chars[term] > 0) {
+    if (output_chars[term] + echo_chars[term] > 0) {
 
         if (echo_chars[term] > 0) {
             WriteDataRegister(term, echo_buffer[term][echo_read_pos[term]]);
             echo_read_pos[term] = (echo_read_pos[term] + 1) % BUF_LEN;
-            --echo_chars[term];
+            echo_chars[term]--;
         } else {
             WriteDataRegister(term, output_buffer[term][output_read_pos[term]]);
             output_write_pos[term] = (output_read_pos[term] + 1) % BUF_LEN;
-            --output_chars[term];
+            output_chars[term]--;
         }
 
         printf("waiting on register\n");
         CondWait(data_register_ready[term]);
-        printf("register available\n");
 
         stats[term].tty_out += 1;
 
@@ -98,6 +102,10 @@ static void flush_output(int term) {
 
 extern int WriteTerminal(int term, char *buf, int buflen) {
     Declare_Monitor_Entry_Procedure();
+
+    while (is_writing[term] > 0)
+        CondWait(can_write);
+    is_writing[term] = 1;
 
     int i;
     for (i = 0; i < buflen; i++) {
@@ -108,9 +116,9 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
         }
 
         printf("Writing character\n");
-        output_buffer[term][output_write_pos[term]++] = buf++;
+        output_buffer[term][output_write_pos[term]] = buf[i];
 
-        output_write_pos[term] %= BUF_LEN;
+        output_write_pos[term] = (output_write_pos[term] + 1) % BUF_LEN;
         ++output_chars[term];
     }
 
@@ -118,6 +126,9 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
     flush_output(term);
 
     stats[term].user_in += i;
+
+    is_writing[term] = 0;
+    CondSignal(can_write[term]);
 
     return i;
 
@@ -174,6 +185,7 @@ extern int InitTerminalDriver() {
     for (i = 0; i < NUM_TERMINALS; i++) {
         inp_empty[i] = CondCreate();
         data_register_ready[i] = CondCreate();
+        can_write[i] = CondCreate();
     }
 
     return 0;
