@@ -38,6 +38,8 @@ static int echo_read_pos[NUM_TERMINALS] = {0};
 static int is_writing[NUM_TERMINALS] = {0};
 static cond_id_t can_write[NUM_TERMINALS];
 
+static int wait_for_data_reg[NUM_TERMINALS] = {0};
+
 static struct termstat stats[NUM_TERMINALS] = {{0,0,0,0}};
 
 
@@ -98,6 +100,7 @@ extern void TransmitInterrupt(int term) {
 
     printf("Transmit interrupt received\n");
 
+    wait_for_data_reg[term] = 0;
     CondSignal(data_register_ready[term]);
 }
 
@@ -120,6 +123,9 @@ static void flush_output(int term) {
 
     while (output_chars[term] + echo_chars[term] > 0) {
 
+        while (wait_for_data_reg[term] > 0)
+            CondWait(data_register_ready[term]);
+
         if (echo_chars[term] > 0) {
             WriteDataRegister(term, echo_buffer[term][echo_read_pos[term]]);
             echo_read_pos[term] = (echo_read_pos[term] + 1) % BUF_LEN;
@@ -130,8 +136,7 @@ static void flush_output(int term) {
             output_chars[term]--;
         }
 
-        printf("waiting on register\n");
-        CondWait(data_register_ready[term]);
+        wait_for_data_reg[term] = 1;
 
         stats[term].tty_out += 1;
 
