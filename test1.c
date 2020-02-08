@@ -1,6 +1,7 @@
 
 
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "hardware.h"
 #include "terminals.h"
@@ -39,13 +40,17 @@ int main(void) {
     int i;
 
     InitTerminalDriver();
+    InitTerminal(1);
+
+    sleep(100);
+
+    exit(0);
 
 
-
-    for (i = 0; i < NUM_TERMINALS; i ++)
-        ThreadCreate(user_thread, &i);
-
-    ThreadWaitAll();
+//    for (i = 0; i < NUM_TERMINALS; i ++)
+//        ThreadCreate(user_thread, &i);
+//
+//    ThreadWaitAll();
 
     return 0;
 }
