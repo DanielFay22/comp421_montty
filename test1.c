@@ -6,8 +6,7 @@
 #include "terminals.h"
 #include "threads.h"
 
-#include "montty.c"
-
+#define BUF_SIZE 16384
 
 
 void ReceiveInterrupt(int term);
@@ -30,7 +29,7 @@ void user_thread(void *vterm) {
     int read;
 
     while (1) {
-        read = ReadTerminal(term, buf, BUF_LEN);
+        read = ReadTerminal(term, buf, BUF_SIZE);
         WriteTerminal(term, buf, read);
     }
 }
