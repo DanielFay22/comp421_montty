@@ -34,15 +34,14 @@ static int echo_read_pos[NUM_TERMINALS] = {0};
 static struct termstat stats[NUM_TERMINALS] = {{0,0,0,0}};
 
 
-extern int input_char(int term) {
+extern void ReceiveInterrupt(int term) {
     Declare_Monitor_Entry_Procedure();
 
     char c = ReadDataRegister(term);
 
     // If either buffer is full, ignore the event.
-    // Returns -1 to indicate failure.
     if (input_chars[term] == BUF_LEN || echo_chars[term] == BUF_LEN)
-        return -1;
+        return;
 
     input_buffer[term][input_write_pos[term]] = c;
     echo_buffer[term][echo_write_pos[term]] = c;
@@ -60,7 +59,13 @@ extern int input_char(int term) {
     // Signal input buffer is non-empty.
     CondSignal(inp_empty[term])
 
-    return 0;
+    return;
+}
+
+extern void TransmitInterrupt(int term) {
+    Declare_Monitor_Entry_Procedure();
+
+    CondSignal(data_register_ready[term]);
 }
 
 static void flush_output(int term) {
@@ -83,7 +88,7 @@ static void flush_output(int term) {
     }
 }
 
-extern int write_chars(int term, char *buf, int buflen) {
+extern int WriteTerminal(int term, char *buf, int buflen) {
     Declare_Monitor_Entry_Procedure();
 
     int i;
@@ -106,7 +111,7 @@ extern int write_chars(int term, char *buf, int buflen) {
 
 }
 
-extern int read_chars(int term, char *buf, int buflen) {
+extern int ReadTerminal(int term, char *buf, int buflen) {
     Declare_Monitor_Entry_Procedure();
 
     int i = 0;
@@ -123,10 +128,8 @@ extern int read_chars(int term, char *buf, int buflen) {
     return i;
 }
 
-extern void set_data_register_ready(int term) {
-    Declare_Monitor_Entry_Procedure();
-
-    CondSignal(data_register_ready[term]);
+extern int InitTerminal(int term) {
+    return InitHardware(term);
 }
 
 //extern void set_data_register_read(int term) {
@@ -134,7 +137,7 @@ extern void set_data_register_ready(int term) {
 //}
 
 
-extern int get_stats(struct termstat *cpy_stats) {
+extern int TerminalDriverStatistics(struct termstat *cpy_stats) {
     Declare_Monitor_Entry_Procedure();
 
     int i;
@@ -145,7 +148,7 @@ extern int get_stats(struct termstat *cpy_stats) {
     return 0;
 }
 
-void init_monitor() {
+void InitTerminalDriver() {
     int i;
 
     for (i = 0; i < NUM_TERMINALS; i++) {
