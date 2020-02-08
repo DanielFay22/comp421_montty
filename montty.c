@@ -138,15 +138,15 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
 }
 
 extern int InitTerminal(int term) {
+    Declare_Monitor_Entry_Procedure();
 
 //    out_full[term] = CondCreate();
 //    inp_empty[term] = CondCreate();
 //    data_register_ready[term] = CondCreate();
-    int s = InitHardware(term);
 
     CondSignal(data_register_ready[term]);
 
-    return s;
+    return InitHardware(term);;
 }
 
 extern int TerminalDriverStatistics(struct termstat *cpy_stats) {
@@ -161,6 +161,8 @@ extern int TerminalDriverStatistics(struct termstat *cpy_stats) {
 }
 
 extern int InitTerminalDriver() {
+    Declare_Monitor_Entry_Procedure();
+
     int i;
 
     for (i = 0; i < NUM_TERMINALS; i++) {
