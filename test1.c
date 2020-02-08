@@ -10,15 +10,15 @@
 #define BUF_SIZE 16384
 
 
-void ReceiveInterrupt(int term);
-void TransmitInterrupt(int term);
-
-int WriteTerminal(int term, char *buf, int buflen);
-int ReadTerminal(int term, char *buf, int buflen);
-
-int InitTerminal(int term);
-int TerminalDriverStatistics(struct termstat *stats);
-int InitTerminalDriver(void);
+//void ReceiveInterrupt(int term);
+//void TransmitInterrupt(int term);
+//
+//int WriteTerminal(int term, char *buf, int buflen);
+//int ReadTerminal(int term, char *buf, int buflen);
+//
+//int InitTerminal(int term);
+//int TerminalDriverStatistics(struct termstat *stats);
+//int InitTerminalDriver(void);
 
 
 void user_thread(void *vterm) {

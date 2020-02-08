@@ -4,6 +4,8 @@
 #include "terminals.h"
 #include "threads.h"
 
+#include <stdio.h>
+
 
 #define BUF_LEN 4096
 
@@ -41,6 +43,8 @@ extern void ReceiveInterrupt(int term) {
 
     char c = ReadDataRegister(term);
 
+    printf("Received character %c\n", c);
+
     // If either buffer is full, ignore the event.
     if (input_chars[term] == BUF_LEN || echo_chars[term] == BUF_LEN)
         return;
@@ -60,8 +64,6 @@ extern void ReceiveInterrupt(int term) {
 
     // Signal input buffer is non-empty.
     CondSignal(inp_empty[term]);
-
-    return;
 }
 
 extern void TransmitInterrupt(int term) {
@@ -79,14 +81,16 @@ static void flush_output(int term) {
             WriteDataRegister(term, echo_buffer[term][echo_read_pos[term]]);
             echo_read_pos[term] = (echo_read_pos[term] + 1) % BUF_LEN;
             --echo_chars[term];
-        } else {
+            stats[term].tty_out += 1;
+        } else if (output_chars[term] > 0) {
             WriteDataRegister(term, output_buffer[term][output_read_pos[term]]);
             output_write_pos[term] = (output_read_pos[term] + 1) % BUF_LEN;
             --output_chars[term];
+            stats[term].tty_out += 1;
             //CondSignal(out_full[term]);
         }
 
-        stats[term].tty_out += 1;
+
     }
 }
 
@@ -131,6 +135,11 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
 }
 
 extern int InitTerminal(int term) {
+
+    out_full[term] = CondCreate();
+    inp_empty[term] = CondCreate();
+    data_register_ready[term] = CondCreate();
+
     return InitHardware(term);
 }
 
