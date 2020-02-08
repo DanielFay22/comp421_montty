@@ -73,9 +73,12 @@ extern void TransmitInterrupt(int term) {
 }
 
 static void flush_output(int term) {
+    printf("flush_output\n");
 
     while (output_chars[term] + echo_chars[term] > 0) {
+        printf("waiting on register\n");
         CondWait(data_register_ready[term]);
+        printf("register available\n");
 
         if (echo_chars[term] > 0) {
             WriteDataRegister(term, echo_buffer[term][echo_read_pos[term]]);
