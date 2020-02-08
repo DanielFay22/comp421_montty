@@ -43,7 +43,7 @@ int main(void) {
 
     ThreadCreate(user_thread, NULL);
 
-    sleep(100);
+    ThreadWaitAll();
 
     exit(0);
 

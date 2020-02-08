@@ -88,7 +88,7 @@ static void flush_output(int term) {
             echo_chars[term]--;
         } else {
             WriteDataRegister(term, output_buffer[term][output_read_pos[term]]);
-            output_write_pos[term] = (output_read_pos[term] + 1) % BUF_LEN;
+            output_read_pos[term] = (output_read_pos[term] + 1) % BUF_LEN;
             output_chars[term]--;
         }
 
