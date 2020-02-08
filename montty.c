@@ -1,4 +1,5 @@
 
+#include <stdlib.h>
 
 #include "hardware.h"
 #include "terminals.h"
@@ -33,11 +34,16 @@ void user_thread(int *term) {
 
 
 int main(void) {
+    int i;
 
     InitTerminalDriver();
 
-    for (int i = 0; i < NUM_TERMINALS; i ++)
-        ThreadCreate(user_thread, &i)
+
+
+    for (i = 0; i < NUM_TERMINALS; i ++)
+        ThreadCreate(user_thread, &i);
 
     ThreadWaitAll();
+
+    return 0;
 }
