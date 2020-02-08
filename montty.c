@@ -21,7 +21,7 @@ int InitTerminalDriver(void);
 
 
 void user_thread(void *vterm) {
-    int term = ((int *)vterm)*;
+    int term = *((int *)vterm);
 
     InitTerminal(term);
 
