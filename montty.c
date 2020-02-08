@@ -104,7 +104,7 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
     Declare_Monitor_Entry_Procedure();
 
     while (is_writing[term] > 0)
-        CondWait(can_write);
+        CondWait(can_write[term]);
     is_writing[term] = 1;
 
     int i;
