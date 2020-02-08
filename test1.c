@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "hardware.h"
 #include "terminals.h"
 #include "threads.h"
 
@@ -21,8 +20,8 @@
 //int InitTerminalDriver(void);
 
 
-void user_thread(void *vterm) {
-    int term = *((int *)vterm);
+void user_thread(void *arg) {
+    int term = 1;
 
     InitTerminal(term);
 
@@ -37,10 +36,12 @@ void user_thread(void *vterm) {
 
 
 int main(void) {
-    int i;
+    int i = 1;
 
     InitTerminalDriver();
     InitTerminal(1);
+
+    ThreadCreate(user_thread, NULL);
 
     sleep(100);
 

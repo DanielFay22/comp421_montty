@@ -1,7 +1,7 @@
 
 
-#include "hardware.h"
-#include "terminals.h"
+#include <hardware.h>
+#include <terminals.h>
 #include "threads.h"
 
 #include <stdio.h>
@@ -12,7 +12,7 @@
 static void flush_output(int term);
 
 
-static cond_id_t out_full[NUM_TERMINALS];
+//static cond_id_t out_full[NUM_TERMINALS];
 static cond_id_t inp_empty[NUM_TERMINALS];
 //static cond_id_t output_ready[NUM_TERMINALS];
 
@@ -121,12 +121,15 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
     Declare_Monitor_Entry_Procedure();
 
     int i = 0;
+    char c = ' ';
 
-    while (i < buflen && (buf[i++] = input_buffer[term][input_read_pos[term]]) != '\n') {
+    while (i < buflen && c != '\n') {
+        while (input_chars[term] == 0)
+            CondWait(inp_empty[term]);
+
+        c = (buf[i++] = input_buffer[term][input_read_pos[term]]);
         input_read_pos[term] = (input_read_pos[term] + 1) % BUF_LEN;
 
-        if (input_chars[term] == 0)
-            CondWait(inp_empty[term]);
     }
 
     stats[term].user_out += i;
@@ -136,9 +139,11 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
 
 extern int InitTerminal(int term) {
 
-    out_full[term] = CondCreate();
-    inp_empty[term] = CondCreate();
-    data_register_ready[term] = CondCreate();
+//    out_full[term] = CondCreate();
+//    inp_empty[term] = CondCreate();
+//    data_register_ready[term] = CondCreate();
+
+    CondSignal(data_register_ready[term]);
 
     return InitHardware(term);
 }
@@ -158,7 +163,6 @@ extern int InitTerminalDriver() {
     int i;
 
     for (i = 0; i < NUM_TERMINALS; i++) {
-        out_full[i] = CondCreate();
         inp_empty[i] = CondCreate();
         data_register_ready[i] = CondCreate();
     }
