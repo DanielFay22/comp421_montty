@@ -25,7 +25,7 @@ void user_thread(void *vterm) {
 
     InitTerminal(term);
 
-    char *buf = (char *) (malloc(sizeof(char) * BUF_LEN));
+    char *buf = (char *) (malloc(sizeof(char) * BUF_SIZE));
     int read;
 
     while (1) {
