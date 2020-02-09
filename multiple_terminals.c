@@ -42,6 +42,7 @@ int main(void) {
     int *term_1, *term_2;
     InitTerminalDriver();
     InitTerminal(1);
+    InitTerminal(2);
 
     term_1 = (int *)malloc(sizeof(int));
     term_2 = (int *)malloc(sizeof(int));
