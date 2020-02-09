@@ -223,6 +223,7 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
     is_reading[term] = 0;
     CondSignal(can_read[term]);
 
+    printf("Waiting on newline\n");
     if (c != '\n')
         CondWait(newline_entered[term]);
 
