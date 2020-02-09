@@ -39,15 +39,15 @@ void reader(void *arg) {
 
 
 int main(void) {
-
+    int *term_1, *term_2;
     InitTerminalDriver();
     InitTerminal(1);
 
-    int *term_1 = (int *)malloc(sozeof(int));
-    int *term_2 = (int *)malloc(sozeof(int));
+    term_1 = (int *)malloc(sizeof(int));
+    term_2 = (int *)malloc(sizeof(int));
 
-    term_1 = 1;
-    term_2 = 2;
+    *term_1 = 1;
+    *term_2 = 2;
 
     ThreadCreate(writer, (void *)term_1);
     ThreadCreate(writer, (void *)term_2);
