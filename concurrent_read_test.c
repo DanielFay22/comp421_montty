@@ -43,7 +43,7 @@ int main(void) {
     InitTerminalDriver();
     InitTerminal(1);
 
-    ThreadCreate(writer, NULL);
+//    ThreadCreate(writer, NULL);
     ThreadCreate(reader, NULL);
     ThreadCreate(reader, NULL);
     ThreadCreate(reader, NULL);
