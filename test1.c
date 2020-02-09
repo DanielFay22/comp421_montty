@@ -32,9 +32,9 @@ int main(void) {
 
     InitTerminalDriver();
 
-    ThreadCreate(user_thread, NULL);
-
-    ThreadWaitAll();
+//    ThreadCreate(user_thread, NULL);
+//
+//    ThreadWaitAll();
 
     struct termstat *stats =
         (struct termstat *)(malloc(sizeof(struct termstat) * 4));
