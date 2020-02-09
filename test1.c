@@ -36,6 +36,16 @@ int main(void) {
 
     ThreadWaitAll();
 
+    struct termstat *stats =
+        (struct termstat *)(malloc(sizeof(struct termstat) * 4));
+
+    printf("tty_in: %d\ttty_out: %d\tuser_in: %d\tuser_out: %d\n",
+        stats[0].tty_in, stats[0].tty_out,
+        stats[0].user_in, stats[0].user_out
+        );
+
+    sleep(10);
+
     exit(0);
 
     return 0;

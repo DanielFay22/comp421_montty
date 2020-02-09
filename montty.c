@@ -51,7 +51,6 @@ static int newlines[NUM_TERMINALS] = {0};
 
 static struct termstat stats[NUM_TERMINALS] = {{0,0,0,0}};
 
-
 extern void ReceiveInterrupt(int term) {
     Declare_Monitor_Entry_Procedure();
 
@@ -122,56 +121,6 @@ extern void TransmitInterrupt(int term) {
 
     wait_for_data_reg[term] = 0;
     CondSignal(data_register_ready[term]);
-}
-
-/*
- * Copies the contents of buf into the echo buffer, if possible.
- */
-static void echo(int term, char *buf, int buflen) {
-    int i;
-
-    if (echo_chars[term] >= BUF_LEN - buflen)
-        return;
-
-    for (i = 0; i < buflen; i++)
-        echo_buffer[term][echo_write_pos[term] + i] = buf[i];
-
-    echo_chars[term] += i;
-    echo_write_pos[term] += i;
-}
-
-/*
- * Outputs all the characters in the echo buffer and the output buffer.
- * Characters in the echo buffer will be output first.
- */
-static void flush_output(int term) {
-    printf("flush_output\n");
-
-    while (output_chars[term] + echo_chars[term] > 0) {
-
-        // If something was written and no transmit interrupt has been received,
-        // wait for an interrupt.
-        while (wait_for_data_reg[term] > 0)
-            CondWait(data_register_ready[term]);
-
-        // Prioritize echoed characters.
-        if (echo_chars[term] > 0) {
-            printf("Writing character: %02x\n", echo_buffer[term][echo_read_pos[term]]);
-            WriteDataRegister(term, echo_buffer[term][echo_read_pos[term]]);
-            echo_read_pos[term] = (echo_read_pos[term] + 1) % BUF_LEN;
-            echo_chars[term]--;
-        } else {
-            WriteDataRegister(term, output_buffer[term][output_read_pos[term]]);
-            output_read_pos[term] = (output_read_pos[term] + 1) % BUF_LEN;
-            output_chars[term]--;
-        }
-
-        // Mark output register as occupied.
-        wait_for_data_reg[term] = 1;
-
-        stats[term].tty_out += 1;
-
-    }
 }
 
 extern int WriteTerminal(int term, char *buf, int buflen) {
@@ -280,4 +229,54 @@ extern int InitTerminalDriver() {
     }
 
     return 0;
+}
+
+/*
+ * Copies the contents of buf into the echo buffer, if possible.
+ */
+static void echo(int term, char *buf, int buflen) {
+    int i;
+
+    if (echo_chars[term] >= BUF_LEN - buflen)
+        return;
+
+    for (i = 0; i < buflen; i++)
+        echo_buffer[term][echo_write_pos[term] + i] = buf[i];
+
+    echo_chars[term] += i;
+    echo_write_pos[term] += i;
+}
+
+/*
+ * Outputs all the characters in the echo buffer and the output buffer.
+ * Characters in the echo buffer will be output first.
+ */
+static void flush_output(int term) {
+    printf("flush_output\n");
+
+    while (output_chars[term] + echo_chars[term] > 0) {
+
+        // If something was written and no transmit interrupt has been received,
+        // wait for an interrupt.
+        while (wait_for_data_reg[term] > 0)
+            CondWait(data_register_ready[term]);
+
+        // Prioritize echoed characters.
+        if (echo_chars[term] > 0) {
+            printf("Writing character: %02x\n", echo_buffer[term][echo_read_pos[term]]);
+            WriteDataRegister(term, echo_buffer[term][echo_read_pos[term]]);
+            echo_read_pos[term] = (echo_read_pos[term] + 1) % BUF_LEN;
+            echo_chars[term]--;
+        } else {
+            WriteDataRegister(term, output_buffer[term][output_read_pos[term]]);
+            output_read_pos[term] = (output_read_pos[term] + 1) % BUF_LEN;
+            output_chars[term]--;
+        }
+
+        // Mark output register as occupied.
+        wait_for_data_reg[term] = 1;
+
+        stats[term].tty_out += 1;
+
+    }
 }
