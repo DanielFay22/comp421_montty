@@ -20,6 +20,8 @@ void user_thread(void *arg) {
 
     while (1) {
         read = ReadTerminal(term, buf, BUF_SIZE);
+        buf[read] = '\0';
+        printf("Read: %s", buf);
         WriteTerminal(term, buf, read);
     }
 }

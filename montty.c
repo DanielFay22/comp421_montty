@@ -219,12 +219,12 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
     char c = ' ';
 
     while (i < buflen && c != '\n') {
-        while (input_chars[term] == 0)
+        if (input_chars[term] == 0)
             CondWait(inp_empty[term]);
 
         c = (buf[i++] = input_buffer[term][input_read_pos[term]]);
         input_read_pos[term] = (input_read_pos[term] + 1) % BUF_LEN;
-        input_chars[term]--;
+        --input_chars[term];
     }
 
     stats[term].user_out += i;
