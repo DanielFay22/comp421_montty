@@ -62,11 +62,17 @@ extern void ReceiveInterrupt(int term) {
 
     switch (c){
         case '\b':
+        case '\177':
             if (input_chars[term] > 0) {
                 input_write_pos[term] = (input_write_pos[term] - 1) % BUF_LEN;
                 --input_chars[term];
 
-                echo(term, "\b \b", 3);
+                echo_buffer[term][echo_write_pos[term]] = '\b';
+                echo_buffer[term][echo_write_pos[term] + 1] = ' ';
+                echo_buffer[term][echo_write_pos[term] + 2] = '\b';
+                echo_chars[term] += 3;
+                echo_write_pos[term] += 3;
+
             }
             break;
         case '\r':
@@ -120,9 +126,8 @@ static void echo(int term, char *buf, int buflen) {
     if (echo_chars[term] >= BUF_LEN - 3)
         return;
 
-    for (i = 0; i < buflen; i++) {
+    for (i = 0; i < buflen; i++)
         echo_buffer[term][echo_write_pos[term] + i] = buf[i];
-    }
 
     echo_chars[term] += i;
     echo_write_pos[term] += i;
