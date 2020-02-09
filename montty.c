@@ -64,6 +64,7 @@ extern void ReceiveInterrupt(int term) {
         case '\b':
         case '\177':
             if (input_chars[term] > 0) {
+                printf("backspace registered\n");
                 input_write_pos[term] = (input_write_pos[term] - 1) % BUF_LEN;
                 --input_chars[term];
 
