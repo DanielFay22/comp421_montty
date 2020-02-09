@@ -37,8 +37,12 @@ int main(void) {
 
     ThreadWaitAll();
 
+    sleep(5);
+
     struct termstat *stats =
         (struct termstat *)(malloc(sizeof(struct termstat) * 4));
+
+    TerminalDriverStatistics(stats);
 
     printf("tty_in: %d\ttty_out: %d\tuser_in: %d\tuser_out: %d\n",
         stats[0].tty_in, stats[0].tty_out,
