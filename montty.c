@@ -9,6 +9,7 @@
 
 #define BUF_LEN 4096
 
+// Function definitions.
 static void flush_output(int term);
 static void echo(int term, char *buf, int buflen);
 
@@ -17,7 +18,7 @@ static cond_id_t inp_empty[NUM_TERMINALS];
 static int wait_for_data_reg[NUM_TERMINALS] = {0};
 static cond_id_t data_register_ready[NUM_TERMINALS];
 
-
+// Keep track of number of characters in buffers.
 static int input_chars[NUM_TERMINALS] = {0};
 static int output_chars[NUM_TERMINALS] = {0};
 static int echo_chars[NUM_TERMINALS] = {0};
@@ -59,7 +60,7 @@ extern void ReceiveInterrupt(int term) {
     printf("Received character %02x\n", c);
 
     // If either buffer is full, ignore the event.
-    if (input_chars[term] == BUF_LEN || echo_chars[term] == BUF_LEN)
+    if (input_chars[term] == BUF_LEN)
         return;
 
     printf("Input chars buffer: %d\n", input_chars[term]);
@@ -68,9 +69,8 @@ extern void ReceiveInterrupt(int term) {
         case '\b':
         case '\177':
             if (line_chars[term] > 0) {
-//                printf("backspace registered\n");
                 input_write_pos[term] = (input_write_pos[term] - 1) % BUF_LEN;
-                --input_chars[term]; // TODO: This can produce a negative count. Need to change.
+                --input_chars[term];
                 --line_chars[term];
 
                 echo(term, "\b \b", 3);
@@ -94,12 +94,14 @@ extern void ReceiveInterrupt(int term) {
             input_buffer[term][input_write_pos[term]] = c;
             input_write_pos[term] = (input_write_pos[term] + 1) % BUF_LEN;
 
-            echo_buffer[term][echo_write_pos[term]] = c;
-            echo_write_pos[term] = (echo_write_pos[term] + 1) % BUF_LEN;
+            if (echo_chars[term] < BUF_LEN) {
+                echo_buffer[term][echo_write_pos[term]] = c;
+                echo_write_pos[term] = (echo_write_pos[term] + 1) % BUF_LEN;
+                ++echo_chars[term];
+            }
 
             ++input_chars[term];
             ++line_chars[term];
-            ++echo_chars[term];
 
             break;
 
@@ -128,7 +130,7 @@ extern void TransmitInterrupt(int term) {
 static void echo(int term, char *buf, int buflen) {
     int i;
 
-    if (echo_chars[term] >= BUF_LEN - 3)
+    if (echo_chars[term] >= BUF_LEN - buflen)
         return;
 
     for (i = 0; i < buflen; i++)
