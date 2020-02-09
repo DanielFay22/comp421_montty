@@ -80,7 +80,7 @@ extern void ReceiveInterrupt(int term) {
         case '\n':
             input_buffer[term][input_write_pos[term]] = '\n';
             input_write_pos[term] = (input_write_pos[term] + 1) % BUF_LEN;
-            ++input_chars[term];
+            input_chars[term]++;
 
             echo(term, "\r\n", 2);
 
@@ -94,8 +94,8 @@ extern void ReceiveInterrupt(int term) {
             echo_buffer[term][echo_write_pos[term]] = c;
             echo_write_pos[term] = (echo_write_pos[term] + 1) % BUF_LEN;
 
-            ++input_chars[term];
-            ++echo_chars[term];
+            input_chars[term]++;
+            echo_chars[term]++;
 
             break;
 
