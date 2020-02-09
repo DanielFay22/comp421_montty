@@ -149,6 +149,7 @@ static void flush_output(int term) {
 
         // Prioritize echoed characters.
         if (echo_chars[term] > 0) {
+            printf("Writing character: %02x\n", echo_buffer[term][echo_read_pos[term]]);
             WriteDataRegister(term, echo_buffer[term][echo_read_pos[term]]);
             echo_read_pos[term] = (echo_read_pos[term] + 1) % BUF_LEN;
             echo_chars[term]--;
