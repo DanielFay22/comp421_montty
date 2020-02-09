@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #include "terminals.h"
 #include "threads.h"
@@ -26,16 +27,18 @@ void reader(void *arg) {
     int term = 1;
     int buflen = 10;
 
-    char *buf = (char *)(malloc(sizeof(char) * buflen));
+    char *buf = (char *)(malloc(sizeof(char) * (buflen + 1)));
 
     ReadTerminal(term, buf, buflen);
+    buf[buflen] = '\n';
 
-    WriteTerminal(term, buf, buflen);
+    printf("Read string: %10s\n", buf);
+
+    WriteTerminal(term, buf, buflen + 1);
 }
 
 
 int main(void) {
-    int i = 1;
 
     InitTerminalDriver();
     InitTerminal(1);
@@ -50,12 +53,6 @@ int main(void) {
     sleep(10);
 
     exit(0);
-
-
-//    for (i = 0; i < NUM_TERMINALS; i ++)
-//        ThreadCreate(user_thread, &i);
-//
-//    ThreadWaitAll();
 
     return 0;
 }

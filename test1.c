@@ -26,22 +26,14 @@ void user_thread(void *arg) {
 
 
 int main(void) {
-    int i = 1;
 
     InitTerminalDriver();
-//    InitTerminal(1);
 
     ThreadCreate(user_thread, NULL);
 
     ThreadWaitAll();
 
     exit(0);
-
-
-//    for (i = 0; i < NUM_TERMINALS; i ++)
-//        ThreadCreate(user_thread, &i);
-//
-//    ThreadWaitAll();
 
     return 0;
 }
