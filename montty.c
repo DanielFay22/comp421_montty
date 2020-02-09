@@ -44,6 +44,7 @@ static int is_reading[NUM_TERMINALS] = {0};
 static cond_id_t can_read[NUM_TERMINALS];
 
 static cond_id_t newline_entered[NUM_TERMINALS];
+static int newlines[NUM_TERMINALS] = {0};
 
 
 
@@ -69,7 +70,7 @@ extern void ReceiveInterrupt(int term) {
             if (line_chars[term] > 0) {
 //                printf("backspace registered\n");
                 input_write_pos[term] = (input_write_pos[term] - 1) % BUF_LEN;
-                --input_chars[term];
+                --input_chars[term]; // TODO: This can produce a negative count. Need to change.
                 --line_chars[term];
 
                 echo(term, "\b \b", 3);
@@ -82,6 +83,7 @@ extern void ReceiveInterrupt(int term) {
             input_write_pos[term] = (input_write_pos[term] + 1) % BUF_LEN;
             ++input_chars[term];
             line_chars[term] = 0;
+            ++newlines[term];
 
             echo(term, "\r\n", 2);
 
@@ -218,6 +220,10 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
     int i = 0;
     char c = ' ';
 
+    // If there are no unread newlines, wait to read from the input buffer.
+    if (newlines[term] == 0)
+        CondWait(newline_entered[term]);
+
     while (i < buflen && c != '\n') {
         if (input_chars[term] == 0)
             CondWait(inp_empty[term]);
@@ -234,6 +240,8 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
 
     if (c != '\n')
         CondWait(newline_entered[term]);
+    else
+        --newlines[term];
     CondSignal(newline_entered[term]);
 
     return i;
