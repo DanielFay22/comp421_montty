@@ -21,6 +21,7 @@ static cond_id_t data_register_ready[NUM_TERMINALS];
 static int input_chars[NUM_TERMINALS] = {0};
 static int output_chars[NUM_TERMINALS] = {0};
 static int echo_chars[NUM_TERMINALS] = {0};
+static int line_chars[NUM_TERMINALS] = {0};
 
 static int input_buffer[NUM_TERMINALS][BUF_LEN];
 static int output_buffer[NUM_TERMINALS][BUF_LEN];
@@ -45,6 +46,7 @@ static cond_id_t can_read[NUM_TERMINALS];
 static cond_id_t newline_entered[NUM_TERMINALS];
 
 
+
 static struct termstat stats[NUM_TERMINALS] = {{0,0,0,0}};
 
 
@@ -64,16 +66,13 @@ extern void ReceiveInterrupt(int term) {
     switch (c){
         case '\b':
         case '\177':
-            if (input_chars[term] > 0) {
-                printf("backspace registered\n");
+            if (line_chars[term] > 0) {
+//                printf("backspace registered\n");
                 input_write_pos[term] = (input_write_pos[term] - 1) % BUF_LEN;
                 --input_chars[term];
+                --line_chars[term];
 
-                echo_buffer[term][echo_write_pos[term]] = '\b';
-                echo_buffer[term][echo_write_pos[term] + 1] = ' ';
-                echo_buffer[term][echo_write_pos[term] + 2] = '\b';
-                echo_chars[term] += 3;
-                echo_write_pos[term] += 3;
+                echo(term, "\b \b", 3);
 
             }
             break;
@@ -82,6 +81,7 @@ extern void ReceiveInterrupt(int term) {
             input_buffer[term][input_write_pos[term]] = '\n';
             input_write_pos[term] = (input_write_pos[term] + 1) % BUF_LEN;
             ++input_chars[term];
+            line_chars[term] = 0;
 
             echo(term, "\r\n", 2);
 
@@ -96,6 +96,7 @@ extern void ReceiveInterrupt(int term) {
             echo_write_pos[term] = (echo_write_pos[term] + 1) % BUF_LEN;
 
             ++input_chars[term];
+            ++line_chars[term];
             ++echo_chars[term];
 
             break;
@@ -231,7 +232,6 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
     is_reading[term] = 0;
     CondSignal(can_read[term]);
 
-    printf("Waiting on newline\n");
     if (c != '\n')
         CondWait(newline_entered[term]);
     CondSignal(newline_entered[term]);
