@@ -12,12 +12,11 @@
 static void flush_output(int term);
 static void echo(int term, char *buf, int buflen);
 
-//static cond_id_t out_full[NUM_TERMINALS];
 static cond_id_t inp_empty[NUM_TERMINALS];
-//static cond_id_t output_ready[NUM_TERMINALS];
 
+static int wait_for_data_reg[NUM_TERMINALS] = {0};
 static cond_id_t data_register_ready[NUM_TERMINALS];
-//static cond_id_t data_register_read[NUM_TERMINALS];
+
 
 static int input_chars[NUM_TERMINALS] = {0};
 static int output_chars[NUM_TERMINALS] = {0};
@@ -27,6 +26,7 @@ static int input_buffer[NUM_TERMINALS][BUF_LEN];
 static int output_buffer[NUM_TERMINALS][BUF_LEN];
 static int echo_buffer[NUM_TERMINALS][BUF_LEN];
 
+
 static int input_write_pos[NUM_TERMINALS] = {0};
 static int output_write_pos[NUM_TERMINALS] = {0};
 static int echo_write_pos[NUM_TERMINALS] = {0};
@@ -35,10 +35,15 @@ static int input_read_pos[NUM_TERMINALS] = {0};
 static int output_read_pos[NUM_TERMINALS] = {0};
 static int echo_read_pos[NUM_TERMINALS] = {0};
 
+
 static int is_writing[NUM_TERMINALS] = {0};
 static cond_id_t can_write[NUM_TERMINALS];
 
-static int wait_for_data_reg[NUM_TERMINALS] = {0};
+static int is_reading[NUM_TERMINALS] = {0};
+static cond_id_t can_read[NUM_TERMINALS];
+
+static cond_id_t newline_entered[NUM_TERMINALS];
+
 
 static struct termstat stats[NUM_TERMINALS] = {{0,0,0,0}};
 
@@ -72,6 +77,8 @@ extern void ReceiveInterrupt(int term) {
 
             echo(term, "\r\n", 2);
 
+            CondSignal(newline_entered[term]);
+
             break;
         default:
             input_buffer[term][input_write_pos[term]] = c;
@@ -104,6 +111,9 @@ extern void TransmitInterrupt(int term) {
     CondSignal(data_register_ready[term]);
 }
 
+/*
+ * Copies the contents of buf into the echo buffer, if possible.
+ */
 static void echo(int term, char *buf, int buflen) {
     int i;
 
@@ -118,14 +128,21 @@ static void echo(int term, char *buf, int buflen) {
     echo_write_pos[term] += i;
 }
 
+/*
+ * Outputs all the characters in the echo buffer and the output buffer.
+ * Characters in the echo buffer will be output first.
+ */
 static void flush_output(int term) {
     printf("flush_output\n");
 
     while (output_chars[term] + echo_chars[term] > 0) {
 
+        // If something was written and no transmit interrupt has been received,
+        // wait for an interrupt.
         while (wait_for_data_reg[term] > 0)
             CondWait(data_register_ready[term]);
 
+        // Prioritize echoed characters.
         if (echo_chars[term] > 0) {
             WriteDataRegister(term, echo_buffer[term][echo_read_pos[term]]);
             echo_read_pos[term] = (echo_read_pos[term] + 1) % BUF_LEN;
@@ -136,6 +153,7 @@ static void flush_output(int term) {
             output_chars[term]--;
         }
 
+        // Mark output register as occupied.
         wait_for_data_reg[term] = 1;
 
         stats[term].tty_out += 1;
@@ -146,6 +164,8 @@ static void flush_output(int term) {
 extern int WriteTerminal(int term, char *buf, int buflen) {
     Declare_Monitor_Entry_Procedure();
 
+    // Ensure only one thread is writing to the same terminal.
+    // This prevents inputs from intermixing.
     while (is_writing[term] > 0)
         CondWait(can_write[term]);
     is_writing[term] = 1;
@@ -182,6 +202,10 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
 extern int ReadTerminal(int term, char *buf, int buflen) {
     Declare_Monitor_Entry_Procedure();
 
+    while (is_reading[term] > 0)
+        CondWait(can_read[term]);
+    is_reading[term] = 1;
+
     int i = 0;
     char c = ' ';
 
@@ -192,10 +216,15 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
         c = (buf[i++] = input_buffer[term][input_read_pos[term]]);
         input_read_pos[term] = (input_read_pos[term] + 1) % BUF_LEN;
         input_chars[term]--;
-
     }
 
     stats[term].user_out += i;
+
+    is_reading[term] = 0;
+    CondSignal(can_read[term]);
+
+    if (c != '\n')
+        CondWait(newline_entered[term]);
 
     return i;
 }
@@ -226,6 +255,8 @@ extern int InitTerminalDriver() {
         inp_empty[i] = CondCreate();
         data_register_ready[i] = CondCreate();
         can_write[i] = CondCreate();
+        can_read[i] = CondCreate();
+        newline_entered[i] = CondCreate();
     }
 
     return 0;
