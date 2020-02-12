@@ -1,2 +1,9 @@
 
 
+
+
+Some notes on ReadTerminal:
+My implementation for ReadTerminal essentially holds the reading threads
+until a line is read, then it begins reading from the input buffer. It
+continues to read until either the last entered \n is reached or the end of
+the buffer is reached. At this point the
