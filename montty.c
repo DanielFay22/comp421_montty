@@ -129,7 +129,7 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
     int i;
     for (i = 0; i < buflen; i++) {
 
-        while (output_chars[term] == BUF_LEN)
+        if (output_chars[term] == BUF_LEN)
             flush_output(term);
 
         output_buffer[term][output_write_pos[term]] = buf[i];
