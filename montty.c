@@ -172,11 +172,11 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
     char c = ' ';
 
     // If there are no unread newlines, wait to read from the input buffer.
-    if (newlines[term] == 0)
+    while (newlines[term] == 0)
         CondWait(newline_entered[term]);
 
     while (i < buflen && c != '\n') {
-        if (input_chars[term] == 0)
+        while (input_chars[term] == 0)
             CondWait(inp_empty[term]);
 
         c = (buf[i++] = input_buffer[term][input_read_pos[term]]);
@@ -189,11 +189,8 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
     is_reading[term] = 0;
     CondSignal(can_read[term]);
 
-    if (c != '\n')
-        CondWait(newline_entered[term]);
-    else
+    if (c == '\n')
         --newlines[term];
-    CondSignal(newline_entered[term]);
 
     return i;
 }
