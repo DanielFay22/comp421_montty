@@ -56,13 +56,9 @@ extern void ReceiveInterrupt(int term) {
 
     char c = ReadDataRegister(term);
 
-    printf("Received character %02x\n", c);
-
     // If either buffer is full, ignore the event.
     if (input_chars[term] == BUF_LEN)
         return;
-
-    printf("Input chars buffer: %d\n", input_chars[term]);
 
     switch (c){
         case '\b':
@@ -117,8 +113,6 @@ extern void ReceiveInterrupt(int term) {
 extern void TransmitInterrupt(int term) {
     Declare_Monitor_Entry_Procedure();
 
-    printf("Transmit interrupt received\n");
-
     wait_for_data_reg[term] = 0;
     CondSignal(data_register_ready[term]);
 }
@@ -135,12 +129,9 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
     int i;
     for (i = 0; i < buflen; i++) {
 
-        while (output_chars[term] == BUF_LEN) {
-            printf("Flushing Output\n");
+        while (output_chars[term] == BUF_LEN)
             flush_output(term);
-        }
 
-        printf("Writing character\n");
         output_buffer[term][output_write_pos[term]] = buf[i];
 
         output_write_pos[term] = (output_write_pos[term] + 1) % BUF_LEN;
@@ -149,7 +140,6 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
         flush_output(term);
     }
 
-    printf("Finished WriteTerminal\n");
     flush_output(term);
 
     stats.user_in += i;
@@ -249,7 +239,6 @@ static void echo(int term, char *buf, int buflen) {
  * Characters in the echo buffer will be output first.
  */
 static void flush_output(int term) {
-    printf("flush_output\n");
 
     while (output_chars[term] + echo_chars[term] > 0) {
 
@@ -260,14 +249,13 @@ static void flush_output(int term) {
 
         // Prioritize echoed characters.
         if (echo_chars[term] > 0) {
-            printf("Writing character: %02x\n", echo_buffer[term][echo_read_pos[term]]);
             WriteDataRegister(term, echo_buffer[term][echo_read_pos[term]]);
             echo_read_pos[term] = (echo_read_pos[term] + 1) % BUF_LEN;
-            echo_chars[term]--;
+            --echo_chars[term];
         } else {
             WriteDataRegister(term, output_buffer[term][output_read_pos[term]]);
             output_read_pos[term] = (output_read_pos[term] + 1) % BUF_LEN;
-            output_chars[term]--;
+            --output_chars[term];
         }
 
         // Mark output register as occupied.
