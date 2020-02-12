@@ -40,13 +40,13 @@ int main(void) {
     sleep(5);
 
     struct termstat *stats =
-        (struct termstat *)(malloc(sizeof(struct termstat) * 4));
+        (struct termstat *)(malloc(sizeof(struct termstat)));
 
     TerminalDriverStatistics(stats);
 
     printf("tty_in: %d\ttty_out: %d\tuser_in: %d\tuser_out: %d\n",
-        stats[0]->tty_in, stats[0]->tty_out,
-        stats[0]->user_in, stats[0]->user_out
+        stats->tty_in, stats->tty_out,
+        stats->user_in, stats->user_out
         );
 
     sleep(10);
