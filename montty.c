@@ -47,9 +47,11 @@ static cond_id_t can_read[NUM_TERMINALS];
 static cond_id_t newline_entered[NUM_TERMINALS];
 static int newlines[NUM_TERMINALS] = {0};
 
+static int active_terminals[NUM_TERMINALS] = {0};
+static int terminal_initialized;
 
 
-static struct termstat stats = {0,0,0,0};
+static struct termstat stats[NUM_TERMINALS];
 
 extern void ReceiveInterrupt(int term) {
     Declare_Monitor_Entry_Procedure();
@@ -120,6 +122,9 @@ extern void TransmitInterrupt(int term) {
 extern int WriteTerminal(int term, char *buf, int buflen) {
     Declare_Monitor_Entry_Procedure();
 
+    if (terminal_initialized == 0 || active_terminals[term] == 0)
+        return -1;
+
     // Ensure only one thread is writing to the same terminal.
     // This prevents inputs from intermixing.
     while (is_writing[term] > 0)
@@ -132,6 +137,10 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
         if (output_chars[term] == BUF_LEN)
             flush_output(term);
 
+        if (buf[i] == '\n') {
+            output_buffer[term][output_write_pos[term]++] = '\r';
+            output_write_pos[term] %= BUF_LEN;
+        }
         output_buffer[term][output_write_pos[term]] = buf[i];
 
         output_write_pos[term] = (output_write_pos[term] + 1) % BUF_LEN;
@@ -153,6 +162,9 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
 
 extern int ReadTerminal(int term, char *buf, int buflen) {
     Declare_Monitor_Entry_Procedure();
+
+    if (terminal_initialized == 0 || active_terminals[term] == 0)
+        return -1;
 
     while (is_reading[term] > 0)
         CondWait(can_read[term]);
@@ -188,22 +200,33 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
 extern int InitTerminal(int term) {
     Declare_Monitor_Entry_Procedure();
 
-    return InitHardware(term);;
+    if (terminal_initialized == 0)
+        return -1;
+
+    return InitHardware(term);
 }
 
 extern int TerminalDriverStatistics(struct termstat *cpy_stats) {
     Declare_Monitor_Entry_Procedure();
 
-    cpy_stats->tty_in = stats.tty_in;
-    cpy_stats->tty_out = stats.tty_out;
-    cpy_stats->user_in = stats.user_in;
-    cpy_stats->user_out = stats.user_out;
+    if (terminal_initialized == 0)
+        return -1;
+
+    int i;
+    for (i = 0; i < NUM_TERMINALS; ++i) {
+        (cpy_stats + i)->tty_in = stats.tty_in;
+        (cpy_stats + i)->tty_out = stats.tty_out;
+        (cpy_stats + i)->user_in = stats.user_in;
+        (cpy_stats + i)->user_out = stats.user_out;
+    }
 
     return 0;
 }
 
 extern int InitTerminalDriver() {
     Declare_Monitor_Entry_Procedure();
+
+    terminal_initialized = 1;
 
     int i;
 

@@ -40,7 +40,7 @@ int main(void) {
     sleep(5);
 
     struct termstat *stats =
-        (struct termstat *)(malloc(sizeof(struct termstat)));
+        (struct termstat *)(malloc(sizeof(struct termstat) * 4));
 
     TerminalDriverStatistics(stats);
 
