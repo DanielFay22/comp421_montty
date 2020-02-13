@@ -138,8 +138,8 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
             flush_output(term);
 
         if (buf[i] == '\n') {
-            output_buffer[term][output_write_pos[term]] = '\r';
-            output_write_pos[term] = (output_write_pos[term] + 1) % BUF_LEN;
+            output_buffer[term][output_write_pos[term]++] = '\r';
+            output_write_pos[term] %= BUF_LEN;
             ++output_chars[term];
         }
         output_buffer[term][output_write_pos[term]] = buf[i];
