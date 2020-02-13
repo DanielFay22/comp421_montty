@@ -203,6 +203,8 @@ extern int InitTerminal(int term) {
     if (terminal_initialized == 0)
         return -1;
 
+    active_terminals[term] = 1;
+
     return InitHardware(term);
 }
 
