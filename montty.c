@@ -104,7 +104,7 @@ extern void ReceiveInterrupt(int term) {
 
     }
 
-    stats.tty_in += 1;
+    stats[term].tty_in += 1;
 
     flush_output(term);
 
@@ -151,7 +151,7 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
 
     flush_output(term);
 
-    stats.user_in += i;
+    stats[term].user_in += i;
 
     is_writing[term] = 0;
     CondSignal(can_write[term]);
@@ -186,7 +186,7 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
         --input_chars[term];
     }
 
-    stats.user_out += i;
+    stats[term].user_out += i;
 
     is_reading[term] = 0;
     CondSignal(can_read[term]);
@@ -214,10 +214,10 @@ extern int TerminalDriverStatistics(struct termstat *cpy_stats) {
 
     int i;
     for (i = 0; i < NUM_TERMINALS; ++i) {
-        (cpy_stats + i)->tty_in = stats.tty_in;
-        (cpy_stats + i)->tty_out = stats.tty_out;
-        (cpy_stats + i)->user_in = stats.user_in;
-        (cpy_stats + i)->user_out = stats.user_out;
+        (cpy_stats + i)->tty_in = stats[i].tty_in;
+        (cpy_stats + i)->tty_out = stats[i].tty_out;
+        (cpy_stats + i)->user_in = stats[i].user_in;
+        (cpy_stats + i)->user_out = stats[i].user_out;
     }
 
     return 0;
@@ -284,7 +284,7 @@ static void flush_output(int term) {
         // Mark output register as occupied.
         wait_for_data_reg[term] = 1;
 
-        stats.tty_out += 1;
+        stats[term].tty_out += 1;
 
     }
 }
