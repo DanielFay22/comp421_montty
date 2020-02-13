@@ -28,7 +28,7 @@ static int input_buffer[NUM_TERMINALS][BUF_LEN];
 static int output_buffer[NUM_TERMINALS][BUF_LEN];
 static int echo_buffer[NUM_TERMINALS][BUF_LEN];
 
-
+// Track read and write positions.
 static int input_write_pos[NUM_TERMINALS] = {0};
 static int output_write_pos[NUM_TERMINALS] = {0};
 static int echo_write_pos[NUM_TERMINALS] = {0};
@@ -37,19 +37,20 @@ static int input_read_pos[NUM_TERMINALS] = {0};
 static int output_read_pos[NUM_TERMINALS] = {0};
 static int echo_read_pos[NUM_TERMINALS] = {0};
 
-
+// Reading and writing locks.
 static int is_writing[NUM_TERMINALS] = {0};
 static cond_id_t can_write[NUM_TERMINALS];
 
 static int is_reading[NUM_TERMINALS] = {0};
 static cond_id_t can_read[NUM_TERMINALS];
 
+// Condition variable for detecting when a newline is in the buffer.
 static cond_id_t newline_entered[NUM_TERMINALS];
 static int newlines[NUM_TERMINALS] = {0};
 
+// Variables for checking for invalid calls.
 static int active_terminals[NUM_TERMINALS] = {0};
 static int terminal_initialized;
-
 
 static struct termstat stats[NUM_TERMINALS];
 
@@ -58,10 +59,11 @@ extern void ReceiveInterrupt(int term) {
 
     char c = ReadDataRegister(term);
 
-    // If either buffer is full, ignore the event.
+    // If input buffer is full, ignore the event.
     if (input_chars[term] == BUF_LEN)
         return;
 
+    // Handle different character cases.
     switch (c){
         case '\b':
         case '\177':
@@ -71,7 +73,6 @@ extern void ReceiveInterrupt(int term) {
                 --line_chars[term];
 
                 echo(term, "\b \b", 3);
-
             }
             break;
         case '\r':
@@ -137,11 +138,14 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
         if (output_chars[term] == BUF_LEN)
             flush_output(term);
 
+        // If the character is a new line, output a \r first.
         if (buf[i] == '\n') {
             output_buffer[term][output_write_pos[term]++] = '\r';
             output_write_pos[term] %= BUF_LEN;
             ++output_chars[term];
         }
+
+        // Output the character.
         output_buffer[term][output_write_pos[term]] = buf[i];
 
         output_write_pos[term] = (output_write_pos[term] + 1) % BUF_LEN;
@@ -158,7 +162,6 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
     CondSignal(can_write[term]);
 
     return i;
-
 }
 
 extern int ReadTerminal(int term, char *buf, int buflen) {
@@ -167,17 +170,18 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
     if (terminal_initialized == 0 || active_terminals[term] == 0)
         return -1;
 
+    int i = 0;
+    char c = ' ';
+
     while (is_reading[term] > 0)
         CondWait(can_read[term]);
     is_reading[term] = 1;
-
-    int i = 0;
-    char c = ' ';
 
     // If there are no unread newlines, wait to read from the input buffer.
     while (newlines[term] == 0)
         CondWait(newline_entered[term]);
 
+    // Read the necessary number of characters or till a new line.
     while (i < buflen && c != '\n') {
         while (input_chars[term] == 0)
             CondWait(inp_empty[term]);
@@ -189,11 +193,13 @@ extern int ReadTerminal(int term, char *buf, int buflen) {
 
     stats[term].user_out += i;
 
-    is_reading[term] = 0;
-    CondSignal(can_read[term]);
-
+    // Decrement new line counter.
     if (c == '\n')
         --newlines[term];
+
+    // Let a waiting thread begin reading.
+    is_reading[term] = 0;
+    CondSignal(can_read[term]);
 
     return i;
 }
