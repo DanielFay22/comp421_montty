@@ -140,6 +140,7 @@ extern int WriteTerminal(int term, char *buf, int buflen) {
         if (buf[i] == '\n') {
             output_buffer[term][output_write_pos[term]] = '\r';
             output_write_pos[term] = (output_write_pos[term] + 1) % BUF_LEN;
+            ++output_chars[term];
         }
         output_buffer[term][output_write_pos[term]] = buf[i];
 
@@ -216,11 +217,6 @@ extern int TerminalDriverStatistics(struct termstat *cpy_stats) {
 
     int i;
     for (i = 0; i < NUM_TERMINALS; ++i) {
-        printf("tty_in: %d\ttty_out: %d\tuser_in: %d\tuser_out: %d\n",
-               stats[i].tty_in, stats[i].tty_out,
-               stats[i].user_in, stats[i].user_out
-        );
-
         (cpy_stats + i)->tty_in = stats[i].tty_in;
         (cpy_stats + i)->tty_out = stats[i].tty_out;
         (cpy_stats + i)->user_in = stats[i].user_in;

@@ -12,7 +12,7 @@
 
 
 void user_thread(void *arg) {
-    int term = 1, i = 0;
+    int term = 0, i = 0;
 
     InitTerminal(term);
 
